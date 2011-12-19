@@ -101,7 +101,8 @@ def _ParseNumber (text, index):
         return (index, float(value))
     
 def _ParseMap (text, index):
-    result = {}
+    from collections import OrderedDict
+    result = OrderedDict()
     
     while True:
         index = _SkipWhitespace (text, index)
@@ -160,8 +161,10 @@ def _Parse(text, index):
     elif c == '\"':
         (index, value) = _ParseString (text, index)
     else:
-        (index, value) = _ParseNumber (text, index)
-        
+        try:
+            (index, value) = _ParseNumber (text, index)
+        except ValueError:
+            (index, value) = _ParseString (text, index, True)
     return (index, value)   
 
 def loads(text):

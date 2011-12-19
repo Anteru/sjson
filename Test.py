@@ -56,6 +56,11 @@ flags = ["UsesOpenMP"]"""
         r = decode.loads(s)
         self.assertDictEqual(r, {'name' : 'FontTextureGenerator', 'flags' : ['UsesOpenMP']})
 
+        
+    def testBugDecodeFailsOnStringWithDot(self):
+        s = 'name = "FontTexture.Generator"'
+        r = decode.loads(s)
+        self.assertDictEqual(r, {'name' : 'FontTexture.Generator'})
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
