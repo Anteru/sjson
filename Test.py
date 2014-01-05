@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # coding=utf8
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
