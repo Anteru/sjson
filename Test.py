@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # coding=utf8
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
@@ -41,7 +40,27 @@ class Test(unittest.TestCase):
                                                               'AA' : 1},
                                                   'RenderSystem' : "Preferred"}})
 
-    def testDecodeFailsForFloats(self):
+    def testReportErrorOnIncompleteArray1(self):
+        s = "test = [1, 2, "
+        with self.assertRaises(Exception):
+            decode.loads (s)
+
+    def testReportErrorOnIncompleteArray2(self):
+        s = "test = ["
+        with self.assertRaises(Exception):
+            decode.loads (s)
+
+    def testReportOnIncompleteMap1(self):
+        s = "test = "
+        with self.assertRaises(Exception):
+            decode.loads (s)
+
+    def testReportOnIncompleteMap2(self):
+        s = "test "
+        with self.assertRaises(Exception):
+            decode.loads (s)
+
+    def testBugDecodeFailsForFloats(self):
         s = "test = 1.0"
         r = decode.loads(s)
         self.assertDictEqual(r, {'test' : 1.0})
