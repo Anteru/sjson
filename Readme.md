@@ -16,7 +16,7 @@ SJSON is very similar to normal JSON. It mostly reduces the required markup a bi
 * File starts with an implicit object. That is, an empty SJSON file is equivalent to a JSON file containing ``{}``.
 * Commas after a key-value pair are optional.
 * Keys don't have to be quoted as long as they are valid identifiers.
-* ``=`` is used instead of ``:``-
+* ``=`` is used instead of ``:``
 
 Example
 -------
