@@ -41,7 +41,7 @@ def testEncodeFalseValue():
 def testDecodeNull():
     assert (sjson.loads ('key = null') == {'key' : None})
 
-def testDecodeFalse():
+def testDecodeTrue():
     assert (sjson.loads ('key = true') == {'key' : True})
 
 def testKeyWithWhitespaceIsEscaped():
@@ -62,7 +62,7 @@ def testEncodeStringValueWithNewlineGetsEscaped():
     r = sjson.dumps ({'key' : 'New\nline'})
     assert ('key = "New\\nline"\n' == r)
 
-def testDecodeStringValueWithEscapedQuote():
+def testDecodeStringValueWithNewline():
     r = sjson.loads ('key = "New\\nline"\n')
     assert (r == {'key' : 'New\nline'})
 
