@@ -2,7 +2,7 @@
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 import collections.abc
 import numbers
@@ -15,9 +15,6 @@ def _Consume(text, index, what):
 	index = _SkipWhitespace (text, index)
 	assert text[index:index+len(what)] == what, "Expected to read '{}' but read '{}' instead".format(what, text[index:index+len(what)])
 	return index + len(what)
-
-def _ParseIdentifier(text, index):
-	return _ParseString (text, index, True)
 
 def _IsWhitespace (c):
 	return c == ' ' or c == '\t' or c == '\n' or c == '\r'
@@ -180,7 +177,7 @@ def _Parse(text, index):
 		try:
 			(index, value) = _ParseNumber (text, index)
 		except ValueError:
-			(index, value) = _ParseString (text, index, True)
+			(index, value) = _ParseString (text, index, False)
 	return (index, value)
 
 def loads(text):
@@ -198,7 +195,7 @@ def _escapeString (s, quote=True):
 	If quote is set, the string will be returned with quotation marks at the
 	beginning and end. If quote is set to false, quotation marks will be only
 	added if needed (that is, if the string contains whitespace.)"""
-	if string.whitespace.find (s) != -1:
+	if True in [c in s for c in string.whitespace]:
 		# String must be quoted, even if quote was not requested
 		quote = True
 

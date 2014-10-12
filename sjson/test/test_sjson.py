@@ -28,6 +28,28 @@ def testEncodeStringValue():
     r = sjson.dumps ({'key' : '23'})
     assert ("key = \"23\"\n" == r)
 
+def testEncodeNullValue():
+    r = sjson.dumps ({'key' : None})
+    assert ("key = null\n" == r)
+
+def testEncodeTrueValue():
+    assert (sjson.dumps ({'key' : True}) == "key = true\n")
+
+def testEncodeFalseValue():
+    assert (sjson.dumps ({'key' : False}) == "key = false\n")
+
+def testDecodeNull():
+    assert (sjson.loads ('key = null') == {'key' : None})
+
+def testDecodeFalse():
+    assert (sjson.loads ('key = true') == {'key' : True})
+
+def testKeyWithWhitespaceIsEscaped():
+    assert (sjson.dumps ({'k y' : None}) == '"k y" = null\n')
+
+def testDecodeFalse():
+    assert (sjson.loads ('key = false') == {'key' : False})
+
 def testEncodeStringValueWithQuoteGetsEscaped():
     r = sjson.dumps ({'key' : '"Quoted string"'})
     assert ('key = "\\"Quoted string\\""\n' == r)
@@ -142,3 +164,11 @@ def testBugDecodeFailsOnStringWithDot():
     s = 'name = "FontTexture.Generator"'
     r = sjson.loads(s)
     assert (r == {'name' : 'FontTexture.Generator'})
+
+def testStringWithoutQuotesAsValueThrows():
+    with pytest.raises (Exception):
+        sjson.loads ("key = baz\n")
+
+def testStringWithoutClosingQuotesThrows():
+    with pytest.raises (Exception):
+        sjson.loads ('key = "baz\n')
