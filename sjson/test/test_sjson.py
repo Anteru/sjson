@@ -172,3 +172,34 @@ def testStringWithoutQuotesAsValueThrows():
 def testStringWithoutClosingQuotesThrows():
     with pytest.raises (Exception):
         sjson.loads ('key = "baz\n')
+
+def testStringWithRawLiteral():
+    r = sjson.loads ("""foo = [=[
+    This is a raw literal
+    string
+    ]=]""")
+    assert r['foo'] == """
+    This is a raw literal
+    string
+    """
+
+def testStringWithRawLiteralQuote():
+    r = sjson.loads ("""foo = [=[I haz a " in here]=]""")
+    assert r['foo'] == """I haz a " in here"""
+
+def testStringWithRawLiteralNewline():
+    r = sjson.loads ("""foo = [=[I haz a
+ in here]=]""")
+    assert r['foo'] == """I haz a\n in here"""
+
+def testStringWithEmptyRawLiteral():
+    r = sjson.loads ("""foo = [=[]=]""")
+    assert r['foo'] == ""
+
+def testStringWithIncorrectlyTerminatedRawLiteral():
+    with pytest.raises (Exception):
+        sjson.loads ("""foo = [=[=]""")
+    with pytest.raises (Exception):
+        sjson.loads ("""foo = [=[]]""")
+    with pytest.raises (Exception):
+        sjson.loads ("""foo = [=[]=""")

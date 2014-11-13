@@ -39,6 +39,10 @@ SJSON:
         key = "value"
     }
 
+As an extension, SJSON allows for raw string literals.
+
+    foo = [=[This is a raw literal with embedded " and stuff]=]
+
 Usage
 -----
 

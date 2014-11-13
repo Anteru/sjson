@@ -50,11 +50,23 @@ def _ParseString(text, index, allowIdentifier = True):
 
 	result = list ()
 
-	if not allowIdentifier and text[index] != '\"':
-		raise RuntimeError ("Quoted string expected")
+	isQuoted = text[index] == '\"' or text [index] == '['
+
+	if not allowIdentifier and not isQuoted:
+		raise RuntimeError ('Quoted string expected')
+
+	rawQuotes = False
+	if text[index] == '[':
+		if text[index:index+3] == '[=[':
+			rawQuotes = True
+		else:
+			raise RuntimeError ('Raw quoted string must start with [=[')
+
+	if rawQuotes:
+		index += 2
 
 	parseIdentifier = False
-	if (text[index] != '\"'):
+	if not isQuoted:
 		index -= 1
 		parseIdentifier = True
 
@@ -64,6 +76,16 @@ def _ParseString(text, index, allowIdentifier = True):
 
 		if parseIdentifier and not _IsIdentifier (c):
 			break
+
+		if c == ']' and rawQuotes:
+			if text[index:index+3] == ']=]':
+				index+=3
+				break
+
+		if rawQuotes:
+			result.append (c)
+			continue
+
 		if c == '\"':
 			index += 1
 			break
@@ -157,6 +179,12 @@ def _Parse(text, index):
 		_RaiseEndOfFile()
 
 	c = text[index]
+	# second lookup character for [=[]=] raw literal strings
+	c2 = None
+
+	if (index+1) < len(text):
+		c2 = text [index+1]
+
 	value = None
 	if c == 't':
 		index = _Consume (text, index, 'true')
@@ -169,8 +197,10 @@ def _Parse(text, index):
 		value = None
 	elif c == '{':
 		(index, value) = _ParseMap (text, index+1)
-	elif c == '[':
+	elif c == '[' and c2 != '=':
 		(index, value) = _ParseList (text, index+1)
+	elif c == '[' and c2 == '=':
+		(index, value) = _ParseString (text, index)
 	elif c == '\"':
 		(index, value) = _ParseString (text, index)
 	else:
