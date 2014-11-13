@@ -2,7 +2,7 @@
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
 
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 import collections.abc
 import numbers
