@@ -203,3 +203,7 @@ def testStringWithIncorrectlyTerminatedRawLiteral():
         sjson.loads ("""foo = [=[]]""")
     with pytest.raises (Exception):
         sjson.loads ("""foo = [=[]=""")
+
+def testUndelimitedMapThrows():
+    with pytest.raises (Exception):
+        sjson.loads ('foo = { bar = "value", baz = { ui = "foo",')
