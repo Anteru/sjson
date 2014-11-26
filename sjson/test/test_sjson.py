@@ -66,6 +66,10 @@ def testDecodeStringValueWithNewline():
     r = sjson.loads ('key = "New\\nline"\n')
     assert (r == {'key' : 'New\nline'})
 
+def testDecodeStringValueWithTab():
+    r = sjson.loads ('key = "Tab\\tulator"')
+    assert (r == {'key' : 'Tab\tulator'})
+
 def testEncodeDict ():
     r = sjson.dumps(OrderedDict([('a',23), ('b',False)]))
     assert ("a = 23\nb = false\n" == r)
@@ -207,3 +211,9 @@ def testStringWithIncorrectlyTerminatedRawLiteral():
 def testUndelimitedMapThrows():
     with pytest.raises (Exception):
         sjson.loads ('foo = { bar = "value", baz = { ui = "foo",')
+
+def testInvalidRawQuotedStringStart():
+    with pytest.raises (Exception):
+        sjson.loads ("foo = [=? wrong ?=]")
+    with pytest.raises (Exception):
+        sjson.loads ("foo = [=] wrong [=]")

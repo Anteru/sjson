@@ -2,9 +2,10 @@
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 import collections.abc
+import collections
 import numbers
 import string
 import io
@@ -20,10 +21,11 @@ class InputStream:
 		r = self._stream.read (count)
 
 		if len (r) < count:
-			_RaiseEndOfFile ()
+			_RaiseEndOfFile (stream)
 
 		for c in r:
-			if c == b'\n':
+			# We test the individual bytes here, must use ord
+			if c == ord ('\n'):
 				self._line += 1
 				self._column = 1
 			else:
@@ -33,7 +35,7 @@ class InputStream:
 	def Peek (self, count = 1, allowEndOfFile = False):
 		r = self._stream.peek (count)
 		if len(r) == 0 and not allowEndOfFile:
-			_RaiseEndOfFile ()
+			_RaiseEndOfFile (stream)
 		elif len (r) == 0 and allowEndOfFile:
 			return None
 		else:
@@ -42,28 +44,30 @@ class InputStream:
 	def Skip (self, count = 1):
 		self.Read (count)
 
-	def GetPosition (self):
-		return {'line' : self._line, 'column' : self._column}
+	def GetLocation (self):
+		loc = collections.namedtuple ('Location', ['line', 'column'])
+		return loc (self._line, self._column)
 
 class ParseException (RuntimeError):
-	def __init__ (self, msg, position):
+	def __init__ (self, msg, location):
 		super (ParseException, self).__init__ (msg)
 		self._msg = msg
-		self._p = position
+		self._location = location
 
-	def GetPosition (self):
-		return self._p
+	def GetLocation (self):
+		return self._location
 
 	def __str__ (self):
-		return '{} at line {}, column {}'.format (self._msg, self._p ['line'], self._p ['column'])
+		return '{} at line {}, column {}'.format (self._msg,
+			self._location.line, self._location.column)
 
-def _RaiseEndOfFile ():
-	raise RuntimeError ("Unexpected end-of-file reached")
+def _RaiseEndOfFile (stream):
+	raise ParseException ('Unexpected end-of-stream', stream.GetLocation ())
 
 def _Consume (stream, what):
 	_SkipWhitespace (stream)
 	if stream.Peek (len (what)) != what:
-		raise ParseException ("Expected to read '{}'".format(what), stream.GetPosition ())
+		raise ParseException ("Expected to read '{}'".format(what), stream.GetLocation ())
 	stream.Skip (len (what))
 
 def _IsWhitespace (c):
@@ -71,6 +75,8 @@ def _IsWhitespace (c):
 	return r
 
 def _SkipWhitespace(stream):
+	'''Skip whitespace. Return true if a new position within the stream was
+	found; returns false if the end of the stream was hit.'''
 	while True:
 		w = stream.Peek (allowEndOfFile = True)
 		if w == None:
@@ -100,7 +106,7 @@ def _ParseString (stream, allowIdentifier = False):
 
 	isQuoted = stream.Peek () == b'\"' or stream.Peek () == b'['
 	if not allowIdentifier and not isQuoted:
-		raise ParseException ('Quoted string expected', stream.GetPosition ())
+		raise ParseException ('Quoted string expected', stream.GetLocation ())
 
 	rawQuotes = False
 	if isQuoted and stream.Peek () == b'[':
@@ -108,7 +114,7 @@ def _ParseString (stream, allowIdentifier = False):
 			rawQuotes = True
 		else:
 			raise ParseException ('Raw quoted string must start with [=[',
-				stream.GetPosition ())
+				stream.GetLocation ())
 	elif isQuoted and stream.Peek () == b'\"':
 		stream.Skip ()
 
@@ -225,7 +231,7 @@ def _Parse (stream):
 	peek = stream.Peek (2, allowEndOfFile = True)
 
 	if peek is None:
-		_RaiseEndOfFile ()
+		_RaiseEndOfFile (stream)
 
 	c = bytes ([peek [0]])
 	c2 = bytes ([peek [1]]) if len (peek) > 1 else None
@@ -251,7 +257,7 @@ def _Parse (stream):
 		try:
 			value = _ParseNumber (stream)
 		except ValueError:
-			raise ParseException ('Invalid character', stream.GetPosition ())
+			raise ParseException ('Invalid character', stream.GetLocation ())
 	return value
 
 def loads (text):
