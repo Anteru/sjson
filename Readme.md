@@ -47,3 +47,28 @@ Usage
 -----
 
 The library provides two methods, ``dumps`` and ``loads``. ``dumps`` encodes an object as SJSON, and ``loads`` decodes a string into a Python dictionary.
+
+Changelog
+---------
+
+### 1.0.4
+
+* Track position during parsing. This will likely reduce the performance a bit, but allows for much better error messages.
+* Input is byte-oriented now
+
+### 1.0.3
+
+* Add support for raw string literals. These are delimited by `[=[` `]=]` and don't require escaping inbetween.
+
+### 1.0.2
+
+* Strings with whitespace are now properly escaped
+
+### 1.0.1
+
+* Various fixes to string encoding/decoding bugs
+* Encoding now uses `collections.abc` to identify sequences and mappings instead of testing directly against `list` and `dict`
+
+### 1.0.0
+
+Initial PyPI release.
