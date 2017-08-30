@@ -13,40 +13,43 @@ import io
 class InputStream:
 	def __init__ (self, s):
 		self._stream = s
-		self._index = 0
-		self._line = 1
-		self._column = 1
+		self._stream_index = 0
+		self._stream_len = len(s)
 
 	def Read (self, count = 1):
-		r = self._stream.read (count)
+		end_index = self._stream_index + count
+		if end_index > self._stream_len:
+			_RaiseEndOfFile (self)
 
-		if len (r) < count:
-			_RaiseEndOfFile (stream)
-
-		for c in r:
-			# We test the individual bytes here, must use ord
-			if c == ord ('\n'):
-				self._line += 1
-				self._column = 1
-			else:
-				self._column += 1
+		r = self._stream[self._stream_index : end_index]
+		self._stream_index = end_index
 		return r
 
 	def Peek (self, count = 1, allowEndOfFile = False):
-		r = self._stream.peek (count)
-		if len(r) == 0 and not allowEndOfFile:
-			_RaiseEndOfFile (stream)
-		elif len (r) == 0 and allowEndOfFile:
-			return None
-		else:
-			return r[:count]
+		end_index = self._stream_index + count
+		if end_index > self._stream_len:
+			if allowEndOfFile:
+				return None
+			_RaiseEndOfFile (self)
+
+		return self._stream[self._stream_index : end_index]
 
 	def Skip (self, count = 1):
-		self.Read (count)
+		self._stream_index += count
 
 	def GetLocation (self):
 		loc = collections.namedtuple ('Location', ['line', 'column'])
-		return loc (self._line, self._column)
+		r = self._stream[0 : self._stream_index]
+		line = 0
+		column = 0
+		for c in r:
+			# We test the individual bytes here, must use ord
+			if c == b'\n'[0]:
+				line += 1
+				column = 1
+			else:
+				column += 1
+		return loc (line, column)
 
 class ParseException (RuntimeError):
 	def __init__ (self, msg, location):
@@ -66,38 +69,32 @@ def _RaiseEndOfFile (stream):
 
 def _Consume (stream, what):
 	_SkipWhitespace (stream)
-	if stream.Peek (len (what)) != what:
+	what_len = len (what)
+	if stream.Peek (what_len) != what:
 		raise ParseException ("Expected to read '{}'".format(what), stream.GetLocation ())
-	stream.Skip (len (what))
+	stream.Skip (what_len)
 
+_WhitespaceSet = set({b' ', b'\t', b'\n', b'\r'})
 def _IsWhitespace (c):
-	r = c in {b' ', b'\t', b'\n', b'\r'}
-	return r
+	return c in _WhitespaceSet
 
 def _SkipWhitespace(stream):
-	'''Skip whitespace. Return true if a new position within the stream was
-	found; returns false if the end of the stream was hit.'''
+	'''Skip whitespace. Returns the next character if a new position within the stream was
+	found; returns None if the end of the stream was hit.'''
 	while True:
 		w = stream.Peek (allowEndOfFile = True)
-		if w == None:
-			return False
-		elif _IsWhitespace (w):
-			stream.Skip ()
-		else:
+		if not _IsWhitespace(w):
 			break
+		stream.Skip ()
 
-	return True
+	return w
 
+_IdentifierSet = set(string.ascii_letters + string.digits + '_')
 def _IsIdentifier(c):
-	import string
-	return chr(c [0]) in set(string.ascii_letters + string.digits + '_')
+	return chr(c [0]) in _IdentifierSet
 
 def _Peek (stream):
-	try:
-		_SkipWhitespace (stream)
-		return stream.Peek ()
-	except:
-		return None
+	return _SkipWhitespace (stream)
 
 def _ParseString (stream, allowIdentifier = False):
 	_SkipWhitespace (stream)
@@ -157,27 +154,31 @@ def _ParseString (stream, allowIdentifier = False):
 	s = str (result, encoding='utf-8')
 	return s
 
-def _ParseNumber (stream):
-	_SkipWhitespace (stream)
+_NumberSeparatorSet = _WhitespaceSet.union(set({b',', b']', b'}', None}))
+def _ParseNumber (stream, p):
+	#p contains the next character in the stream
 
 	numberBytes = bytearray ()
+	isDecimal = False
+
 	while True:
+		if p in _NumberSeparatorSet:
+			break
+
+		if p == b'.':
+			isDecimal = True
+
+		numberBytes += p
+		stream.Skip ()
+
 		p = stream.Peek (allowEndOfFile = True)
 
-		if p is None:
-			break
+	value = numberBytes.decode('utf-8')
 
-		if _IsWhitespace(p) or p == b',' or p == b']' or p == b'}':
-			break
-		else:
-			numberBytes += stream.Read ()
-
-	value = str (numberBytes, encoding='utf-8')
-
-	try:
-		return int(value)
-	except ValueError:
+	if isDecimal:
 		return float(value)
+	else:
+		return int(value)
 
 def _ParseMap (stream, delimited = False):
 	from collections import OrderedDict
@@ -186,15 +187,15 @@ def _ParseMap (stream, delimited = False):
 	if stream.Peek () == b'{':
 		stream.Skip ()
 
+	nextChar = _SkipWhitespace (stream)
+
 	while True:
-		if delimited:
-			_SkipWhitespace (stream)
-		else:
-			if not _SkipWhitespace (stream):
+		if not delimited:
+			if nextChar == None:
 				break
 
-		if stream.Peek () == b'}':
-			_Consume (stream, b'}')
+		if nextChar == b'}':
+			stream.Skip ()
 			break
 
 		key = _ParseString (stream, True)
@@ -202,66 +203,66 @@ def _ParseMap (stream, delimited = False):
 		value = _Parse (stream)
 		result [key] = value
 
-		if _Peek (stream) == b',':
-			_Consume (stream, b',')
+		nextChar = _SkipWhitespace (stream)
+		if nextChar == b',':
+			stream.Skip ()
+			nextChar = _SkipWhitespace (stream)
 
 	return result
 
 def _ParseList (stream):
 	result = []
-	_Consume (stream, b'[')
+	# Skip '['
+	stream.Skip ()
+	nextChar = _SkipWhitespace (stream)
 
 	while True:
-		_SkipWhitespace (stream)
-		if stream.Peek () == b']':
+		if nextChar == b']':
 			stream.Skip ()
 			break
 
 		value = _Parse (stream)
 		result.append (value)
 
-		if _Peek (stream) == b',':
-			_Consume (stream, b',')
+		nextChar = _SkipWhitespace (stream)
+		if nextChar == b',':
+			stream.Skip ()
+			nextChar = _SkipWhitespace (stream)
 
 	return result
 
 def _Parse (stream):
-	_SkipWhitespace (stream)
+	c = _SkipWhitespace (stream)
 
-	peek = stream.Peek (2, allowEndOfFile = True)
-
-	if peek is None:
-		_RaiseEndOfFile (stream)
-
-	c = bytes ([peek [0]])
-	c2 = bytes ([peek [1]]) if len (peek) > 1 else None
-	# second lookup character for [=[]=] raw literal strings
-
-	value = None
 	if c == b't':
 		_Consume (stream, b'true')
-		value = True
+		return True
 	elif c == b'f':
 		_Consume (stream, b'false')
-		value = False
+		return False
 	elif c == b'n':
 		_Consume (stream, b'null')
-		value = None
+		return None
 	elif c == b'{':
-		value = _ParseMap (stream, True)
-	elif c == b'[' and c2 != b'=':
-		value = _ParseList (stream)
-	elif (c == b'[' and c2 == b'=') or c == b'\"':
-		value = _ParseString (stream)
-	else:
-		try:
-			value = _ParseNumber (stream)
-		except ValueError:
-			raise ParseException ('Invalid character', stream.GetLocation ())
-	return value
+		return _ParseMap (stream, True)
+	elif c == b'\"':
+		return _ParseString (stream)
+	elif c == b'[':
+		peek = stream.Peek (2, allowEndOfFile = False)
+		# second lookup character for [=[]=] raw literal strings
+		c2 = peek [1:2]
+		if c2 != b'=':
+			return _ParseList (stream)
+		elif c2 == b'=':
+			return _ParseString (stream)
+
+	try:
+		return _ParseNumber (stream, c)
+	except ValueError:
+		raise ParseException ('Invalid character', stream.GetLocation ())
 
 def loads (text):
-	return _ParseMap (InputStream (io.BufferedReader (io.BytesIO (text.encode ('utf-8')))))
+	return _ParseMap (InputStream (text.encode ('utf-8')))
 
 def dumps(o, indent=None):
 	_indent = 0
