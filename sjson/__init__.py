@@ -10,46 +10,83 @@ import numbers
 import string
 import io
 
-class InputStream:
+class MemoryInputStream:
 	def __init__ (self, s):
 		self._stream = s
-		self._stream_index = 0
-		self._stream_len = len(s)
+		self._streamIndex = 0
+		self._streamLen = len(s)
 
 	def Read (self, count = 1):
-		end_index = self._stream_index + count
-		if end_index > self._stream_len:
+		endIndex = self._streamIndex + count
+		if endIndex > self._streamLen:
 			_RaiseEndOfFile (self)
 
-		r = self._stream[self._stream_index : end_index]
-		self._stream_index = end_index
+		r = self._stream[self._streamIndex : endIndex]
+		self._streamIndex = endIndex
 		return r
 
 	def Peek (self, count = 1, allowEndOfFile = False):
-		end_index = self._stream_index + count
-		if end_index > self._stream_len:
+		endIndex = self._streamIndex + count
+		if endIndex > self._streamLen:
 			if allowEndOfFile:
 				return None
 			_RaiseEndOfFile (self)
 
-		return self._stream[self._stream_index : end_index]
+		return self._stream[self._streamIndex : endIndex]
 
 	def Skip (self, count = 1):
-		self._stream_index += count
+		self._streamIndex += count
 
 	def GetLocation (self):
 		loc = collections.namedtuple ('Location', ['line', 'column'])
-		r = self._stream[0 : self._stream_index]
+		r = self._stream[0 : self._streamIndex]
 		line = 0
 		column = 0
 		for c in r:
 			# We test the individual bytes here, must use ord
-			if c == b'\n'[0]:
+			if c == ord('\n'):
 				line += 1
-				column = 1
+				column = 0
 			else:
 				column += 1
 		return loc (line, column)
+
+class ByteBufferInputStream:
+	def __init__ (self, s):
+		self._stream = s
+		self._index = 0
+		self._line = 0
+		self._column = 0
+
+	def Read (self, count = 1):
+		r = self._stream.read (count)
+		if len (r) < count:
+			_RaiseEndOfFile (stream)
+
+		for c in r:
+			# We test the individual bytes here, must use ord
+			if c == ord ('\n'):
+				self._line += 1
+				self._column = 0
+			else:
+				self._column += 1
+		return r
+
+	def Peek (self, count = 1, allowEndOfFile = False):
+		r = self._stream.peek (count)
+		if len(r) == 0 and not allowEndOfFile:
+			_RaiseEndOfFile (stream)
+		elif len (r) == 0 and allowEndOfFile:
+			return None
+		else:
+			return r[:count]
+
+	def Skip (self, count = 1):
+		self.Read (count)
+
+	def GetLocation (self):
+		loc = collections.namedtuple ('Location', ['line', 'column'])
+		return loc (self._line, self._column)
 
 class ParseException (RuntimeError):
 	def __init__ (self, msg, location):
@@ -69,10 +106,14 @@ def _RaiseEndOfFile (stream):
 
 def _Consume (stream, what):
 	_SkipWhitespace (stream)
-	what_len = len (what)
-	if stream.Peek (what_len) != what:
+	whatLen = len (what)
+	if stream.Peek (whatLen) != what:
 		raise ParseException ("Expected to read '{}'".format(what), stream.GetLocation ())
-	stream.Skip (what_len)
+	stream.Skip (whatLen)
+
+def _SkipCharactersAndSkipWhitespace (stream, numCharactersToSkip):
+	stream.Skip (numCharactersToSkip)
+	return _SkipWhitespace (stream)
 
 _WhitespaceSet = set({b' ', b'\t', b'\n', b'\r'})
 def _IsWhitespace (c):
@@ -165,7 +206,7 @@ def _ParseNumber (stream, p):
 		if p in _NumberSeparatorSet:
 			break
 
-		if p == b'.':
+		if p == b'.' or p == b'e' or p == b'E':
 			isDecimal = True
 
 		numberBytes += p
@@ -190,9 +231,8 @@ def _ParseMap (stream, delimited = False):
 	nextChar = _SkipWhitespace (stream)
 
 	while True:
-		if not delimited:
-			if nextChar == None:
-				break
+		if not delimited and nextChar == None:
+			break
 
 		if nextChar == b'}':
 			stream.Skip ()
@@ -205,16 +245,14 @@ def _ParseMap (stream, delimited = False):
 
 		nextChar = _SkipWhitespace (stream)
 		if nextChar == b',':
-			stream.Skip ()
-			nextChar = _SkipWhitespace (stream)
+			nextChar = _SkipCharactersAndSkipWhitespace (stream, 1)
 
 	return result
 
 def _ParseList (stream):
 	result = []
 	# Skip '['
-	stream.Skip ()
-	nextChar = _SkipWhitespace (stream)
+	nextChar = _SkipCharactersAndSkipWhitespace (stream, 1)
 
 	while True:
 		if nextChar == b']':
@@ -226,8 +264,7 @@ def _ParseList (stream):
 
 		nextChar = _SkipWhitespace (stream)
 		if nextChar == b',':
-			stream.Skip ()
-			nextChar = _SkipWhitespace (stream)
+			nextChar = _SkipCharactersAndSkipWhitespace (stream, 1)
 
 	return result
 
@@ -261,8 +298,11 @@ def _Parse (stream):
 	except ValueError:
 		raise ParseException ('Invalid character', stream.GetLocation ())
 
+def load (stream):
+	return _ParseMap (ByteBufferInputStream (io.BufferedReader (io.BytesIO (stream.encode ('utf-8')))))
+
 def loads (text):
-	return _ParseMap (InputStream (text.encode ('utf-8')))
+	return _ParseMap (MemoryInputStream (text.encode ('utf-8')))
 
 def dumps(o, indent=None):
 	_indent = 0

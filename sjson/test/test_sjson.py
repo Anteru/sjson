@@ -217,3 +217,11 @@ def testInvalidRawQuotedStringStart():
         sjson.loads ("foo = [=? wrong ?=]")
     with pytest.raises (Exception):
         sjson.loads ("foo = [=] wrong [=]")
+
+def testExceptionLocation():
+    try:
+        sjson.loads ("foo = true\nbar = fail")
+    except sjson.ParseException as e:
+        location = e.GetLocation()
+        assert location.line == 1
+        assert location.column == 6
