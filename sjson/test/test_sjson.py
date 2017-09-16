@@ -4,6 +4,7 @@
 
 import sjson
 import pytest
+import io
 
 from collections import OrderedDict
 import collections.abc
@@ -225,3 +226,10 @@ def testExceptionLocation():
         location = e.GetLocation()
         assert location.line == 1
         assert location.column == 6
+
+def testDecodeFromStream():
+    s = """name = "FontTextureGenerator",
+flags = ["UsesOpenMP"]"""
+    s = io.BytesIO (s.encode ('utf-8'))
+    r = sjson.load(s)
+    assert (r == {'name' : 'FontTextureGenerator', 'flags' : ['UsesOpenMP']})

@@ -2,7 +2,7 @@
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
 
-__version__ = '1.0.4'
+__version__ = '1.1.0'
 
 import collections.abc
 import collections
@@ -299,7 +299,7 @@ def _Parse (stream):
 		raise ParseException ('Invalid character', stream.GetLocation ())
 
 def load (stream):
-	return _ParseMap (ByteBufferInputStream (io.BufferedReader (io.BytesIO (stream.encode ('utf-8')))))
+	return _ParseMap (ByteBufferInputStream (io.BufferedReader (stream)))
 
 def loads (text):
 	return _ParseMap (MemoryInputStream (text.encode ('utf-8')))
