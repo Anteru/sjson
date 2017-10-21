@@ -40,13 +40,13 @@ class MemoryInputStream:
 	def GetLocation (self):
 		loc = collections.namedtuple ('Location', ['line', 'column'])
 		r = self._stream[0 : self._streamIndex]
-		line = 0
-		column = 0
+		line = 1
+		column = 1
 		for c in r:
 			# We test the individual bytes here, must use ord
 			if c == ord('\n'):
 				line += 1
-				column = 0
+				column = 1
 			else:
 				column += 1
 		return loc (line, column)
@@ -55,8 +55,8 @@ class ByteBufferInputStream:
 	def __init__ (self, s):
 		self._stream = s
 		self._index = 0
-		self._line = 0
-		self._column = 0
+		self._line = 1
+		self._column = 1
 
 	def Read (self, count = 1):
 		r = self._stream.read (count)
@@ -67,7 +67,7 @@ class ByteBufferInputStream:
 			# We test the individual bytes here, must use ord
 			if c == ord ('\n'):
 				self._line += 1
-				self._column = 0
+				self._column = 1
 			else:
 				self._column += 1
 		return r

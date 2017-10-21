@@ -224,8 +224,8 @@ def testExceptionLocation():
         sjson.loads ("foo = true\nbar = fail")
     except sjson.ParseException as e:
         location = e.GetLocation()
-        assert location.line == 1
-        assert location.column == 6
+        assert location.line == 2
+        assert location.column == 7
 
 def testDecodeFromStream():
     s = """name = "FontTextureGenerator",
