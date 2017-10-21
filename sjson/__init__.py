@@ -119,12 +119,54 @@ _WhitespaceSet = set({b' ', b'\t', b'\n', b'\r'})
 def _IsWhitespace (c):
 	return c in _WhitespaceSet
 
+def _SkipCStyleComment(stream):
+	commentStartLocation = stream.GetLocation ()
+	# Skip the comment start
+	stream.Skip (2)
+	# we don't support nested comments, so we're not going to
+	# count the nesting level. Instead, skip ahead until we
+	# find a closing */
+	while True:
+		w = stream.Peek (1, allowEndOfFile = True)		
+		if w == b'*':
+			commentEnd = stream.Peek (2, allowEndOfFile=True)
+			if commentEnd == b'*/':
+				stream.Skip (2)
+				break
+			else:
+				stream.Skip ()
+		elif w is None:
+			raise ParseException ("Could not find closing '*/' for comment",
+				commentStartLocation)
+		
+		stream.Skip ()
+
+
+def _SkipCppStyleComment(stream):
+	commentStartLocation = stream.GetLocation ()
+	# Skip the comment start
+	stream.Skip (2)
+	while True:
+		w = stream.Peek (allowEndOfFile = True)		
+		if w is None or w == b'\n':
+			break
+		stream.Skip ()
+
 def _SkipWhitespace(stream):
 	'''Skip whitespace. Returns the next character if a new position within the stream was
 	found; returns None if the end of the stream was hit.'''
 	while True:
 		w = stream.Peek (allowEndOfFile = True)
 		if not _IsWhitespace(w):
+			if w == b'/':
+				# this could be a C or C++ style comment
+				commentStart = stream.Peek (2, allowEndOfFile = True)
+				if commentStart == b'/*':
+					_SkipCStyleComment (stream)
+					continue
+				elif commentStart == b'//':
+					_SkipCppStyleComment (stream)
+					continue
 			break
 		stream.Skip ()
 

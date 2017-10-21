@@ -233,3 +233,44 @@ flags = ["UsesOpenMP"]"""
     s = io.BytesIO (s.encode ('utf-8'))
     r = sjson.load(s)
     assert (r == {'name' : 'FontTextureGenerator', 'flags' : ['UsesOpenMP']})
+
+def testCStyleCommentIsIgnored():
+    r = sjson.loads ("""foo = /* bar */ 23""")
+    assert 'foo' in r
+    assert r['foo'] == 23
+
+def testNotClosedCStyleCommentThrows():
+    with pytest.raises (Exception):
+        sjson.loads ("""foo = /* bar * 23""")
+
+def testCppStyleCommentIsIgnored():
+    r = sjson.loads ("""foo = // bar
+    23""")
+    assert 'foo' in r
+    assert r['foo'] == 23
+
+def testParseStringraySJSONExample():
+    r = sjson.loads ("""// The script that should be started when the application runs.
+boot_script = "boot"
+
+// The port on which the console server runs.
+console_port = 14030
+
+// Settings for the win32 platform
+win32 = {
+
+    /* Sets the affinity mask for
+       QueryPerformanceCounter() */
+    query_performance_counter_affinity_mask = 0
+
+}
+
+render_config = "core/rendering/renderer" """)
+    assert r == {
+        'boot_script' : 'boot',
+        'console_port' : 14030,
+        'win32' : {
+            'query_performance_counter_affinity_mask' : 0
+        },
+        'render_config' : 'core/rendering/renderer'
+    }
