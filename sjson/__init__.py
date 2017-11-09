@@ -347,8 +347,14 @@ def loads (text):
 	return _ParseMap (MemoryInputStream (text.encode ('utf-8')))
 
 def dumps(o, indent=None):
-	_indent = 0
-	if indent and indent > 0:
+	import numbers
+	if not indent:
+		_indent = ''
+	elif isinstance(indent, numbers.Number):
+		if indent < 0:
+			indent = 0
+		_indent = ' ' * indent
+	else:
 		_indent = indent
 	return ''.join (_encode(o, indent=_indent))
 
@@ -395,7 +401,7 @@ def _encode(l, separators=(', ', '\n', ' = '), indent=0, level=0):
 		raise RuntimeError("Invalid object type")
 
 def _indent(level, indent):
-	return ' ' * (level * indent)
+	return indent * level
 
 def _encodeKey (k):
 	yield from _escapeString (k, False)

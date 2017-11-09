@@ -287,3 +287,24 @@ def testEncodeNestedList():
 }\n"""), indent = 4) == """key = {
     value = [1, 2, 3]
 }\n"""
+
+def testIndentWithString():
+    assert sjson.dumps (sjson.loads ("""key = {
+    value = [1, 2, 3]
+}\n"""), indent = '\t') == """key = {
+\tvalue = [1, 2, 3]
+}\n"""
+
+def testIndentWithPositiveNumber():
+    assert sjson.dumps (sjson.loads ("""key = {
+    value = [1, 2, 3]
+}\n"""), indent = 4) == """key = {
+    value = [1, 2, 3]
+}\n"""
+
+def testIndentWithNegativeNumberDoesNotIndent():
+    assert sjson.dumps (sjson.loads ("""key = {
+    value = [1, 2, 3]
+}\n"""), indent = -2) == """key = {
+value = [1, 2, 3]
+}\n"""
