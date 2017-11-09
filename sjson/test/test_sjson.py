@@ -280,3 +280,10 @@ def testReadKeyWithHyphen():
     r = sjson.dumps (r)
 
     assert r == """"key-with-hyphen" = 42\n"""
+
+def testEncodeNestedList():
+    assert sjson.dumps (sjson.loads ("""key = {
+    value = [1, 2, 3]
+}\n"""), indent = 4) == """key = {
+    value = [1, 2, 3]
+}\n"""

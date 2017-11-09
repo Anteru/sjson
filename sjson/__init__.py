@@ -408,7 +408,6 @@ def _encodeList (l, separators, indent, level):
 			first = False
 		else:
 			yield separators[0]
-		yield _indent (level, indent)
 		yield from _encode (e, separators, indent, level+1)
 	yield ']'
 
