@@ -357,8 +357,8 @@ def _escapeString (s, quote=True):
 
 	If quote is set, the string will be returned with quotation marks at the
 	beginning and end. If quote is set to false, quotation marks will be only
-	added if needed (that is, if the string contains whitespace.)"""
-	if True in [c in s for c in string.whitespace]:
+	added if needed (that is, if the string is not an identifier.)"""
+	if any ([c not in _IdentifierSet for c in s]):
 		# String must be quoted, even if quote was not requested
 		quote = True
 

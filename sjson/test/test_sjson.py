@@ -274,3 +274,9 @@ render_config = "core/rendering/renderer" """)
         },
         'render_config' : 'core/rendering/renderer'
     }
+
+def testReadKeyWithHyphen():
+    r = sjson.loads (""""key-with-hyphen" = 42\n""")
+    r = sjson.dumps (r)
+
+    assert r == """"key-with-hyphen" = 42\n"""
