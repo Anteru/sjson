@@ -223,7 +223,7 @@ def testExceptionLocation():
     try:
         sjson.loads ("foo = true\nbar = fail")
     except sjson.ParseException as e:
-        location = e.GetLocation()
+        location = e.get_location()
         assert location.line == 2
         assert location.column == 7
 
