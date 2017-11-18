@@ -55,6 +55,10 @@ The library provides two methods, `dumps` and `loads`. `dumps` encodes an object
 Changelog
 ---------
 
+### 2.0.0
+
+* The library is now PEP8 compliant. This should *not* affect most users of this library, the only user-visible change is that `ParseException.GetLocation` has been renamed to `get_location`. The core functions have not been renamed and are binary compatible.
+
 ### 1.2.0
 
 * Keys did not get quoted properly during encoding if they contained special characters.
