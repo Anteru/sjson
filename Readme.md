@@ -6,17 +6,17 @@ SJSON
 License
 -------
 
-**SJSON** is licensed under the two-clause BSD license. See ``LICENSE.txt`` for details.
+**SJSON** is licensed under the two-clause BSD license. See `LICENSE.txt` for details.
 
 SJSON format
 ------------
 
-SJSON is very similar to normal JSON. It mostly reduces the required markup a bit. The main differences are:
+SJSON is very similar to normal JSON (in fact, since release 1.2.0, the SJSON library will also load plain JSON). It mostly reduces the required markup a bit. The main differences are:
 
-* Every file starts with an implicit object. That is, an empty SJSON file is equivalent to a JSON file containing ``{}``.
+* Every file starts with an implicit object. That is, an empty SJSON file is equivalent to a JSON file containing `{}`.
 * Commas after a key-value pair are optional.
-* Keys don't have to be quoted as long as they are valid identifiers.
-* ``=`` is used instead of ``:``
+* Keys don't have to be quoted as long as they are valid identifiers. An identifier consists of letters, digits, and `_`.
+* `=` is allowed in addition to `:` for key-value separation. The canonical separator is `=`.
 * C and C++ style comments are allowed.
 
 In addition, this library provides support for raw string literals.
@@ -50,10 +50,17 @@ As an extension, SJSON allows for raw string literals.
 Usage
 -----
 
-The library provides two methods, ``dumps`` and ``loads``. ``dumps`` encodes an object as SJSON, and ``loads`` decodes a string into a Python dictionary.
+The library provides two methods, `dumps` and `loads`. `dumps` encodes an object as SJSON, and `loads` decodes a string into a Python dictionary.
 
 Changelog
 ---------
+
+### 1.2.0
+
+* Keys did not get quoted properly during encoding if they contained special characters.
+* List elements were incorrectly indented.
+* List indentation now accepts either a string or a number (similar to the Python JSON module.)
+* Both `:` and `=` are now supported as key-value separators, allowing the SJSON library to parse plain JSON files.
 
 ### 1.1.1
 
@@ -68,7 +75,7 @@ Changelog
 ### 1.0.4
 
 * Track position during parsing. This will likely reduce the performance a bit, but allows for much better error messages.
-* Input is byte-oriented now
+* Input is byte-oriented now.
 
 ### 1.0.3
 
@@ -76,12 +83,12 @@ Changelog
 
 ### 1.0.2
 
-* Strings with whitespace are now properly escaped
+* Strings with whitespace are now properly escaped.
 
 ### 1.0.1
 
-* Various fixes to string encoding/decoding bugs
-* Encoding now uses `collections.abc` to identify sequences and mappings instead of testing directly against `list` and `dict`
+* Various fixes to string encoding/decoding bugs.
+* Encoding now uses `collections.abc` to identify sequences and mappings instead of testing directly against `list` and `dict`.
 
 ### 1.0.0
 

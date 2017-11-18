@@ -2,7 +2,7 @@
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
 
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 
 import collections.abc
 import collections
@@ -264,6 +264,10 @@ def _ParseNumber (stream, p):
 		return int(value)
 
 def _ParseMap (stream, delimited = False):
+	"""
+	delimited -- if ``True``, parsing will stop once the end-of-dictionary
+				 delimiter has been reached (``}``)
+	"""
 	from collections import OrderedDict
 	result = OrderedDict()
 
@@ -281,7 +285,10 @@ def _ParseMap (stream, delimited = False):
 			break
 
 		key = _ParseString (stream, True)
-		_Consume (stream, b'=')
+		nextChar = _SkipWhitespace (stream)
+		# We allow both '=' and ':' as separators inside maps
+		if nextChar == b'=' or nextChar == b':':
+			_Consume (stream, nextChar)
 		value = _Parse (stream)
 		result [key] = value
 

@@ -308,3 +308,6 @@ def testIndentWithNegativeNumberDoesNotIndent():
 }\n"""), indent = -2) == """key = {
 value = [1, 2, 3]
 }\n"""
+
+def testDoubleColonSeparator():
+    assert sjson.loads ("""{"smells-like" : "json"}""") == {'smells-like' : 'json'}
