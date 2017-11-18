@@ -57,7 +57,7 @@ Changelog
 
 ### 2.0.0
 
-* The library is now PEP8 compliant. This should *not* affect most users of this library, the only user-visible change is that `ParseException.GetLocation` has been renamed to `get_location`. The core functions have not been renamed and are binary compatible.
+* The library is now PEP8 compliant. This should *not* affect most users of this library, the only user-visible change is that `ParseException.GetLocation` has been renamed to `get_location`. The core functions have not been renamed and are API compatible.
 
 ### 1.2.0
 
