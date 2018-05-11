@@ -50,10 +50,20 @@ As an extension, SJSON allows for raw string literals.
 Usage
 -----
 
-The library provides two methods, `dumps` and `loads`. `dumps` encodes an object as SJSON, and `loads` decodes a string into a Python dictionary.
+The library provides four methods, similar to the Python JSON module. These are:
+
+* `dump`: Encode an object as SJSON and write to a stream.
+* `dumps`: Encode an object as SJSON and return a string.
+* `load`: Decode a SJSON encoded object from a stream.
+* `loads`: Decode a SJSON encoded object from a string.
 
 Changelog
 ---------
+
+### 2.0.1
+
+* Add `dump` in addition to `dumps` for consistency with the Python JSON module.
+* Additional PEP8 conformance tweaks.
 
 ### 2.0.0
 

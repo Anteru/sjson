@@ -1,16 +1,16 @@
 """Module to parse SJSON files."""
-
 # coding=utf8
 # @author: Matthäus G. Chajdas
 # @license: 3-clause BSD
-
-__version__ = '2.0.0'
 
 import collections.abc
 import collections
 import numbers
 import string
 import io
+
+__version__ = '2.0.1'
+
 
 class MemoryInputStream:
     """Input stream wrapper for reading directly from memory."""
@@ -27,21 +27,21 @@ class MemoryInputStream:
         end_index = self._current_index + count
         if end_index > self._length:
             _raise_end_of_file_exception(self)
-        result = self._stream[self._current_index : end_index]
+        result = self._stream[self._current_index:end_index]
         self._current_index = end_index
         return result
 
     def peek(self, count=1, allow_end_of_file=False):
-        """peek ``count`` bytes from the stream. If ``allow_end_of_file`` is ``True``,
-        no error will be raised if the end of the stream is reached while trying
-        to peek."""
+        """peek ``count`` bytes from the stream. If ``allow_end_of_file`` is
+        ``True``, no error will be raised if the end of the stream is reached
+        while trying to peek."""
         end_index = self._current_index + count
         if end_index > self._length:
             if allow_end_of_file:
                 return None
             _raise_end_of_file_exception(self)
 
-        return self._stream[self._current_index : end_index]
+        return self._stream[self._current_index:end_index]
 
     def skip(self, count=1):
         """skip ``count`` bytes."""
@@ -50,7 +50,7 @@ class MemoryInputStream:
     def get_location(self):
         """Get the current location in the stream."""
         loc = collections.namedtuple('Location', ['line', 'column'])
-        bytes_read = self._stream[0 : self._current_index]
+        bytes_read = self._stream[:self._current_index]
         line = 1
         column = 1
         for byte in bytes_read:
@@ -61,6 +61,7 @@ class MemoryInputStream:
             else:
                 column += 1
         return loc(line, column)
+
 
 class ByteBufferInputStream:
     """Input stream wrapper for reading directly from an I/O object."""
@@ -86,9 +87,9 @@ class ByteBufferInputStream:
         return result
 
     def peek(self, count=1, allow_end_of_file=False):
-        """peek ``count`` bytes from the stream. If ``allow_end_of_file`` is ``True``,
-        no error will be raised if the end of the stream is reached while trying
-        to peek."""
+        """peek ``count`` bytes from the stream. If ``allow_end_of_file`` is
+        ``True``, no error will be raised if the end of the stream is reached
+        while trying to peek."""
         result = self._stream.peek(count)
         if not result and not allow_end_of_file:
             _raise_end_of_file_exception(self)
@@ -106,6 +107,7 @@ class ByteBufferInputStream:
         loc = collections.namedtuple('Location', ['line', 'column'])
         return loc(self._line, self._column)
 
+
 class ParseException(RuntimeError):
     """Parse exception."""
     def __init__(self, msg, location):
@@ -122,23 +124,30 @@ class ParseException(RuntimeError):
                                                  self._location.line,
                                                  self._location.column)
 
+
 def _raise_end_of_file_exception(stream):
     raise ParseException('Unexpected end-of-stream', stream.get_location())
+
 
 def _consume(stream, what):
     _skip_whitespace(stream)
     what_len = len(what)
     if stream.peek(what_len) != what:
-        raise ParseException("Expected to read '{}'".format(what), stream.get_location())
+        raise ParseException("Expected to read '{}'".format(what),
+                             stream.get_location())
     stream.skip(what_len)
+
 
 def _skip_characterse_and_whitespace(stream, num_char_to_skip):
     stream.skip(num_char_to_skip)
     return _skip_whitespace(stream)
 
 _WHITESPACE_SET = set({b' ', b'\t', b'\n', b'\r'})
+
+
 def _is_whitespace(char):
     return char in _WHITESPACE_SET
+
 
 def _skip_c_style_comment(stream):
     comment_start_location = stream.get_location()
@@ -171,9 +180,10 @@ def _skip_cpp_style_comment(stream):
             break
         stream.skip()
 
+
 def _skip_whitespace(stream):
-    '''skip whitespace. Returns the next character if a new position within the stream was
-    found; returns None if the end of the stream was hit.'''
+    '''skip whitespace. Returns the next character if a new position within the
+    stream was found; returns None if the end of the stream was hit.'''
     while True:
         next_char = stream.peek(allow_end_of_file=True)
         if not _is_whitespace(next_char):
@@ -192,8 +202,11 @@ def _skip_whitespace(stream):
     return next_char
 
 _IDENTIFIER_SET = set(string.ascii_letters + string.digits + '_')
+
+
 def _is_identifier(obj):
     return chr(obj[0]) in _IDENTIFIER_SET
+
 
 def _decode_escaped_character(char):
     if char == b'b':
@@ -204,6 +217,7 @@ def _decode_escaped_character(char):
         return b'\t'
     elif char == b'\\' or char == b'\"':
         return char
+
 
 def _decode_string(stream, allow_identifier=False):
     _skip_whitespace(stream)
@@ -254,6 +268,8 @@ def _decode_string(stream, allow_identifier=False):
     return str(result, encoding='utf-8')
 
 _NUMBER_SEPARATOR_SET = _WHITESPACE_SET.union(set({b',', b']', b'}', None}))
+
+
 def _decode_number(stream, next_char):
     """Parse a number.
 
@@ -279,6 +295,7 @@ def _decode_number(stream, next_char):
     if is_decimal_number:
         return float(value)
     return int(value)
+
 
 def _decode_dict(stream, delimited=False):
     """
@@ -315,6 +332,7 @@ def _decode_dict(stream, delimited=False):
 
     return result
 
+
 def _parse_list(stream):
     result = []
     # skip '['
@@ -333,6 +351,7 @@ def _parse_list(stream):
             next_char = _skip_characterse_and_whitespace(stream, 1)
 
     return result
+
 
 def _parse(stream):
     next_char = _skip_whitespace(stream)
@@ -364,16 +383,27 @@ def _parse(stream):
     except ValueError:
         raise ParseException('Invalid character', stream.get_location())
 
+
 def load(stream):
     """Load a SJSON object from a stream."""
     return _decode_dict(ByteBufferInputStream(io.BufferedReader(stream)))
+
 
 def loads(text):
     """Load a SJSON object from a string."""
     return _decode_dict(MemoryInputStream(text.encode('utf-8')))
 
+
 def dumps(obj, indent=None):
     """Dump an object to a string."""
+    import io
+    stream = io.StringIO()
+    dump(obj, stream, indent)
+    return stream.getvalue()
+
+
+def dump(obj, fp, indent=None):
+    """Dump an object to a stream."""
     if not indent:
         _indent = ''
     elif isinstance(indent, numbers.Number):
@@ -382,7 +412,12 @@ def dumps(obj, indent=None):
         _indent = ' ' * indent
     else:
         _indent = indent
-    return ''.join(_encode(obj, indent=_indent))
+
+    for e in _encode(obj, indent=_indent):
+        fp.write(e)
+
+_ESCAPE_CHARACTER_SET = {'\n': '\\n', '\b': '\\b', '\t': '\\t', '\"': '\\"'}
+
 
 def _escape_string(obj, quote=True):
     """Escape a string.
@@ -397,13 +432,14 @@ def _escape_string(obj, quote=True):
     if quote:
         yield '"'
 
-    for key, value in {'\n':'\\n', '\b':'\\b', '\t':'\\t', '\"':'\\"'}.items():
+    for key, value in _ESCAPE_CHARACTER_SET.items():
         obj = obj.replace(key, value)
 
     yield obj
 
     if quote:
         yield '"'
+
 
 def _encode(obj, separators=(', ', '\n', ' = '), indent=0, level=0):
     if obj is None:
@@ -426,11 +462,14 @@ def _encode(obj, separators=(', ', '\n', ' = '), indent=0, level=0):
     else:
         raise RuntimeError("Unsupported object type")
 
+
 def _indent(level, indent):
     return indent * level
 
+
 def _encode_key(k):
     yield from _escape_string(k, False)
+
 
 def _encode_list(obj, separators, indent, level):
     yield '['
@@ -442,6 +481,7 @@ def _encode_list(obj, separators, indent, level):
             yield separators[0]
         yield from _encode(element, separators, indent, level+1)
     yield ']'
+
 
 def _encode_dict(obj, separators, indent, level):
     if level > 0:
