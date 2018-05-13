@@ -60,6 +60,14 @@ The library provides four methods, similar to the Python JSON module. These are:
 Changelog
 ---------
 
+### 2.0.3
+
+* Re-release of 2.0.2.
+
+### 2.0.2
+
+* Packaging changes only. This release contains packaging changes only and has not been released to the public, use 2.0.3 instead.
+
 ### 2.0.1
 
 * Add `dump` in addition to `dumps` for consistency with the Python JSON module.

@@ -9,7 +9,7 @@ import numbers
 import string
 import io
 
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 
 
 class MemoryInputStream:
