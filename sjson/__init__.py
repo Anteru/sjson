@@ -217,6 +217,11 @@ def _decode_escaped_character(char):
         return b'\t'
     elif char == b'\\' or char == b'\"':
         return char
+    else:
+        # If we get here, it's an invalid escape sequence. We will simply return
+        # it as-if it was not invalid (i.e. \l for instance will get turned
+        # into \\l)
+        return b'\\' + char
 
 
 def _decode_string(stream, allow_identifier=False):

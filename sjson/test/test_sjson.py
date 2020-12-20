@@ -311,3 +311,20 @@ value = [1, 2, 3]
 
 def testDoubleColonSeparator():
     assert sjson.loads ("""{"smells-like" : "json"}""") == {'smells-like' : 'json'}
+
+def testEscapedL():
+    l = sjson.loads(r"""{
+  Animations = [
+    {
+      Name = "BootImage"
+      ChainTo = "BootFade"
+      FilePath = "Launch\load_bg"
+      Type = "Constant"
+      EndFrame = 1
+      NumFrames = 1
+      StartFrame = 1
+      Material = "Unlit"
+    }
+  ]
+}""")
+    assert l['Animations'][0]['FilePath'] == r'Launch\load_bg'
