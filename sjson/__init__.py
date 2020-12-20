@@ -225,6 +225,8 @@ def _decode_escaped_character(char):
 
 
 def _decode_string(stream, allow_identifier=False):
+    # When we enter here, we either start with " or [, or there is no quoting
+    # enabled.
     _skip_whitespace(stream)
 
     result = bytearray()
@@ -234,18 +236,23 @@ def _decode_string(stream, allow_identifier=False):
         raise ParseException('Quoted string expected', stream.get_location())
 
     raw_quotes = False
-    if is_quoted and stream.peek() == b'[':
-        if stream.read(3) == b'[=[':
-            raw_quotes = True
-        else:
-            raise ParseException('Raw quoted string must start with [=[',
-                                 stream.get_location())
+    # Try Python-style, """ delimited strings
+    if is_quoted and stream.peek(3) == b'\"\"\"':
+        stream.skip(3)
+        raw_quotes = True
+    # Try Lua-style, [=[ delimited strings
+    elif is_quoted and stream.peek(3) == b'[=[':
+        stream.skip(3)
+        raw_quotes = True
     elif is_quoted and stream.peek() == b'\"':
         stream.skip()
+    elif is_quoted:
+        #
+        raise ParseException('Invalid quoted string, must start with ",'
+                             '""", or [=[',
+                             stream.get_location())
 
-    parse_as_identifier = False
-    if not is_quoted:
-        parse_as_identifier = True
+    parse_as_identifier = not is_quoted
 
     while True:
         next_char = stream.peek()
@@ -253,7 +260,10 @@ def _decode_string(stream, allow_identifier=False):
             break
 
         if raw_quotes:
-            if next_char == b']' and stream.peek(3) == b']=]':
+            if next_char == b'\"' and stream.peek(3) == b'\"\"\"':
+                stream.skip(3)
+                break
+            elif next_char == b']' and stream.peek(3) == b']=]':
                 stream.skip(3)
                 break
             else:

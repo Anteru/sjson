@@ -328,3 +328,11 @@ def testEscapedL():
   ]
 }""")
     assert l['Animations'][0]['FilePath'] == r'Launch\load_bg'
+
+def testPythonStyleString():
+    l = sjson.loads('''{
+    foo = """This is
+multiline!"""
+}''')
+    assert l['foo'] == """This is
+multiline!"""
