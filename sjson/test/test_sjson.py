@@ -336,3 +336,21 @@ multiline!"""
 }''')
     assert l['foo'] == """This is
 multiline!"""
+
+def testQuadrupleQuotedString():
+    l = sjson.loads('''{
+    Foo = """"Why oh why""""
+}''')
+    assert l['Foo'] == '"Why oh why"'
+
+def testQuintupleQuotedString():
+    l = sjson.loads('''{
+    Foo = """""Why oh why"""""
+}''')
+    assert l['Foo'] == '""Why oh why""'
+
+def testSixtupleQuotedStringIsInvalid():
+    with pytest.raises(sjson.ParseException):
+        sjson.loads('''{
+        Foo = """"""Why oh why""""""
+    }''')

@@ -261,6 +261,29 @@ def _decode_string(stream, allow_identifier=False):
 
         if raw_quotes:
             if next_char == b'\"' and stream.peek(3) == b'\"\"\"':
+                # This is a tricky case -- we're in a """ quoted string, and
+                # we spotted three consecutive """. This could mean we're at the
+                # end, but it doesn't have to be -- we actually need to check
+                # all the cases below:
+                #   * """: simple case, just end here
+                #   * """": A single quote inside the string,
+                #     followed by the end marker
+                #   * """"": A double double quote inside the string,
+                #     followed by the end marker
+                # Note that """""" is invalid, no matter what follows
+                # afterwards, as the first group of three terminates the string,
+                # and then we'd have an unrelated string afterwards. We don't
+                # concat strings automatically so this will trigger an error
+                # Start with longest match, as the other is prefix this has
+                # to be the first check
+                if stream.peek(5, allow_end_of_file=True) == b'\"\"\"\"\"':
+                    result += b'\"\"'
+                    stream.skip(5)
+                    break
+                elif stream.peek(4, allow_end_of_file=True) == b'\"\"\"\"':
+                    result += next_char
+                    stream.skip(4)
+                    break
                 stream.skip(3)
                 break
             elif next_char == b']' and stream.peek(3) == b']=]':
