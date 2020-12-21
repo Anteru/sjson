@@ -142,7 +142,8 @@ def _skip_characterse_and_whitespace(stream, num_char_to_skip):
     stream.skip(num_char_to_skip)
     return _skip_whitespace(stream)
 
-_WHITESPACE_SET = set({b' ', b'\t', b'\n', b'\r'})
+
+_WHITESPACE_SET = {b' ', b'\t', b'\n', b'\r'}
 
 
 def _is_whitespace(char):
@@ -182,8 +183,8 @@ def _skip_cpp_style_comment(stream):
 
 
 def _skip_whitespace(stream):
-    '''skip whitespace. Returns the next character if a new position within the
-    stream was found; returns None if the end of the stream was hit.'''
+    """skip whitespace. Returns the next character if a new position within the
+    stream was found; returns None if the end of the stream was hit."""
     while True:
         next_char = stream.peek(allow_end_of_file=True)
         if not _is_whitespace(next_char):
@@ -200,6 +201,7 @@ def _skip_whitespace(stream):
         stream.skip()
 
     return next_char
+
 
 _IDENTIFIER_SET = set(string.ascii_letters + string.digits + '_')
 
@@ -305,7 +307,8 @@ def _decode_string(stream, allow_identifier=False):
 
     return str(result, encoding='utf-8')
 
-_NUMBER_SEPARATOR_SET = _WHITESPACE_SET.union(set({b',', b']', b'}', None}))
+
+_NUMBER_SEPARATOR_SET = _WHITESPACE_SET.union({b',', b']', b'}', None})
 
 
 def _decode_number(stream, next_char):
@@ -453,6 +456,7 @@ def dump(obj, fp, indent=None):
 
     for e in _encode(obj, indent=_indent):
         fp.write(e)
+
 
 _ESCAPE_CHARACTER_SET = {'\n': '\\n', '\b': '\\b', '\t': '\\t', '\"': '\\"'}
 
