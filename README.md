@@ -43,9 +43,11 @@ SJSON:
         key = "value"
     }
 
-As an extension, SJSON allows for raw string literals.
+As an extension, SJSON allows for raw string literals, in both Lua and Python flavors:
 
     foo = [=[This is a raw literal with embedded " and stuff]=]
+
+    foo = """This is a raw literal with embedded " and stuff]=]
 
 Usage
 -----
@@ -59,6 +61,11 @@ The library provides four methods, similar to the Python JSON module. These are:
 
 Changelog
 ---------
+
+### 2.1
+
+* Add support for Python-style raw strings, delimited by `"""`.
+* Improve handling of unknown string escapes. Previously, those would raise an exception, now they get passed through.
 
 ### 2.0.3
 
@@ -86,7 +93,7 @@ Changelog
 
 ### 1.1.1
 
-* Support for C/C++ style comments has been added.
+* Add support for C/C++ style comments.
 * Line/column numbers start at 1 now (previously, the first character was in line 0, column 0).
 
 ### 1.1.0

@@ -8,6 +8,7 @@ import collections
 import numbers
 import string
 import io
+from enum import Enum
 
 __version__ = '2.0.3'
 
@@ -226,6 +227,11 @@ def _decode_escaped_character(char):
         return b'\\' + char
 
 
+class RawQuoteStyle(Enum):
+    Lua = 1
+    Python = 2
+
+
 def _decode_string(stream, allow_identifier=False):
     # When we enter here, we either start with " or [, or there is no quoting
     # enabled.
@@ -237,15 +243,15 @@ def _decode_string(stream, allow_identifier=False):
     if not allow_identifier and not is_quoted:
         raise ParseException('Quoted string expected', stream.get_location())
 
-    raw_quotes = False
+    raw_quotes = None
     # Try Python-style, """ delimited strings
     if is_quoted and stream.peek(3) == b'\"\"\"':
         stream.skip(3)
-        raw_quotes = True
+        raw_quotes = RawQuoteStyle.Python
     # Try Lua-style, [=[ delimited strings
     elif is_quoted and stream.peek(3) == b'[=[':
         stream.skip(3)
-        raw_quotes = True
+        raw_quotes = RawQuoteStyle.Lua
     elif is_quoted and stream.peek() == b'\"':
         stream.skip()
     elif is_quoted:
@@ -262,7 +268,8 @@ def _decode_string(stream, allow_identifier=False):
             break
 
         if raw_quotes:
-            if next_char == b'\"' and stream.peek(3) == b'\"\"\"':
+            if raw_quotes == RawQuoteStyle.Python and \
+                    next_char == b'\"' and stream.peek(3) == b'\"\"\"':
                 # This is a tricky case -- we're in a """ quoted string, and
                 # we spotted three consecutive """. This could mean we're at the
                 # end, but it doesn't have to be -- we actually need to check
@@ -288,7 +295,8 @@ def _decode_string(stream, allow_identifier=False):
                     break
                 stream.skip(3)
                 break
-            elif next_char == b']' and stream.peek(3) == b']=]':
+            elif raw_quotes == RawQuoteStyle.Lua and \
+                    next_char == b']' and stream.peek(3) == b']=]':
                 stream.skip(3)
                 break
             else:

@@ -250,7 +250,7 @@ def testCppStyleCommentIsIgnored():
     assert r['foo'] == 23
 
 def testParseStringraySJSONExample():
-    r = sjson.loads ("""// The script that should be started when the application runs.
+    r = sjson.loads("""// The script that should be started when the application runs.
 boot_script = "boot"
 
 // The port on which the console server runs.
@@ -267,31 +267,31 @@ win32 = {
 
 render_config = "core/rendering/renderer" """)
     assert r == {
-        'boot_script' : 'boot',
-        'console_port' : 14030,
-        'win32' : {
+        'boot_script': 'boot',
+        'console_port': 14030,
+        'win32': {
             'query_performance_counter_affinity_mask' : 0
         },
         'render_config' : 'core/rendering/renderer'
     }
 
 def testReadKeyWithHyphen():
-    r = sjson.loads (""""key-with-hyphen" = 42\n""")
-    r = sjson.dumps (r)
+    r = sjson.loads(""""key-with-hyphen" = 42\n""")
+    r = sjson.dumps(r)
 
     assert r == """"key-with-hyphen" = 42\n"""
 
 def testEncodeNestedList():
     assert sjson.dumps (sjson.loads ("""key = {
     value = [1, 2, 3]
-}\n"""), indent = 4) == """key = {
+}\n"""), indent=4) == """key = {
     value = [1, 2, 3]
 }\n"""
 
 def testIndentWithString():
     assert sjson.dumps (sjson.loads ("""key = {
     value = [1, 2, 3]
-}\n"""), indent = '\t') == """key = {
+}\n"""), indent='\t') == """key = {
 \tvalue = [1, 2, 3]
 }\n"""
 
@@ -305,52 +305,39 @@ def testIndentWithPositiveNumber():
 def testIndentWithNegativeNumberDoesNotIndent():
     assert sjson.dumps (sjson.loads ("""key = {
     value = [1, 2, 3]
-}\n"""), indent = -2) == """key = {
+}\n"""), indent=-2) == """key = {
 value = [1, 2, 3]
 }\n"""
 
 def testDoubleColonSeparator():
-    assert sjson.loads ("""{"smells-like" : "json"}""") == {'smells-like' : 'json'}
+    assert sjson.loads ("""{"smells-like" : "json"}""") == {'smells-like': 'json'}
 
-def testEscapedL():
-    l = sjson.loads(r"""{
-  Animations = [
-    {
-      Name = "BootImage"
-      ChainTo = "BootFade"
-      FilePath = "Launch\load_bg"
-      Type = "Constant"
-      EndFrame = 1
-      NumFrames = 1
-      StartFrame = 1
-      Material = "Unlit"
-    }
-  ]
-}""")
-    assert l['Animations'][0]['FilePath'] == r'Launch\load_bg'
+def testUnknownEscapeGetsIgnored():
+    l = sjson.loads(r'foo = "Bar\lbaz"')
+    assert l['foo'] == r'Bar\lbaz'
 
 def testPythonStyleString():
-    l = sjson.loads('''{
-    foo = """This is
-multiline!"""
-}''')
+    l = sjson.loads('''foo = """This is
+multiline!"""''')
     assert l['foo'] == """This is
 multiline!"""
 
 def testQuadrupleQuotedString():
-    l = sjson.loads('''{
-    Foo = """"Why oh why""""
-}''')
+    l = sjson.loads('''Foo = """"Why oh why""""''')
     assert l['Foo'] == '"Why oh why"'
 
 def testQuintupleQuotedString():
-    l = sjson.loads('''{
-    Foo = """""Why oh why"""""
-}''')
+    l = sjson.loads('''Foo = """""Why oh why"""""''')
     assert l['Foo'] == '""Why oh why""'
 
 def testSixtupleQuotedStringIsInvalid():
     with pytest.raises(sjson.ParseException):
-        sjson.loads('''{
-        Foo = """"""Why oh why""""""
-    }''')
+        sjson.loads('''Foo = """"""Why oh why""""""''')
+
+def testPythonRawQuotedStringInsideLuaRawString():
+    l = sjson.loads('''foo = [=[ String """ string ]=]''')
+    assert l['foo'] == ''' String """ string '''
+
+def testLuaRawQuotedStringInsidePythonRawString():
+    l = sjson.loads('''foo = """ String [=[ baz ]=] string """''')
+    assert l['foo'] == ''' String [=[ baz ]=] string '''
