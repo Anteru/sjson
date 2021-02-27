@@ -130,34 +130,34 @@ def testBugDecodeFailure1():
 
 def testReportErrorOnIncompleteArray1():
     s = "test = [1, 2, "
-    with pytest.raises (Exception):
-        sjson.loads (s)
+    with pytest.raises(Exception):
+        sjson.loads(s)
 
 def testReportErrorOnIncompleteArray2():
     s = "test = ["
-    with pytest.raises (Exception):
-        sjson.loads (s)
+    with pytest.raises(Exception):
+        sjson.loads(s)
 
 def testReportOnIncompleteMap1():
     s = "test = "
-    with pytest.raises (Exception):
-        sjson.loads (s)
+    with pytest.raises(Exception):
+        sjson.loads(s)
 
 def testReportOnIncompleteMap2():
     s = "test "
-    with pytest.raises (Exception):
-        sjson.loads (s)
+    with pytest.raises(Exception):
+        sjson.loads(s)
 
 def testBugDecodeFailsForFloats():
     s = "test = 1.0"
     r = sjson.loads(s)
-    assert (r == {'test' : 1.0})
+    assert (r == {'test': 1.0})
 
 def testBugDecodeFailure2():
     s = """name = "FontTextureGenerator",
 ui = 2"""
     r = sjson.loads(s)
-    assert (r == {'name' : 'FontTextureGenerator', 'ui' : 2})
+    assert (r == {'name': 'FontTextureGenerator', 'ui': 2})
 
 def testBugDecodeFailure3():
     s = """name = "FontTextureGenerator",
@@ -219,9 +219,21 @@ def testInvalidRawQuotedStringStart():
     with pytest.raises (Exception):
         sjson.loads ("foo = [=] wrong [=]")
 
-def testExceptionLocation():
+def testExceptionLocationFromString():
     try:
         sjson.loads ("foo = true\nbar = fail")
+    except sjson.ParseException as e:
+        location = e.get_location()
+        assert location.line == 2
+        assert location.column == 7
+        msg = str(e)
+        assert msg == 'Unexpected end-of-stream at line 2, column 7'
+
+def testExceptionLocationFromBytesIO():
+    try:
+        import io
+        i = io.BytesIO("foo = true\nbar = fail".encode('utf-8'))
+        sjson.load(i)
     except sjson.ParseException as e:
         location = e.get_location()
         assert location.line == 2
@@ -341,3 +353,14 @@ def testPythonRawQuotedStringInsideLuaRawString():
 def testLuaRawQuotedStringInsidePythonRawString():
     l = sjson.loads('''foo = """ String [=[ baz ]=] string """''')
     assert l['foo'] == ''' String [=[ baz ]=] string '''
+
+def testEncodeUnknownTypeRaisesException():
+    class X:
+        pass
+
+    with pytest.raises(RuntimeError):
+        sjson.dumps({'a': X()})
+
+def testDecodeEscapedCharacters():
+    l = sjson.loads('''a = "\\b\\n\\t"''')
+    assert l['a'] == """\b\n\t"""
