@@ -139,7 +139,7 @@ def _consume(stream, what):
     stream.skip(what_len)
 
 
-def _skip_characterse_and_whitespace(stream, num_char_to_skip):
+def _skip_characters_and_whitespace(stream, num_char_to_skip):
     stream.skip(num_char_to_skip)
     return _skip_whitespace(stream)
 
@@ -377,7 +377,7 @@ def _decode_dict(stream, delimited=False):
 
         next_char = _skip_whitespace(stream)
         if next_char == b',':
-            next_char = _skip_characterse_and_whitespace(stream, 1)
+            next_char = _skip_characters_and_whitespace(stream, 1)
 
     return result
 
@@ -385,7 +385,7 @@ def _decode_dict(stream, delimited=False):
 def _parse_list(stream):
     result = []
     # skip '['
-    next_char = _skip_characterse_and_whitespace(stream, 1)
+    next_char = _skip_characters_and_whitespace(stream, 1)
 
     while True:
         if next_char == b']':
@@ -397,7 +397,7 @@ def _parse_list(stream):
 
         next_char = _skip_whitespace(stream)
         if next_char == b',':
-            next_char = _skip_characterse_and_whitespace(stream, 1)
+            next_char = _skip_characters_and_whitespace(stream, 1)
 
     return result
 
