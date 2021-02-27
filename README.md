@@ -47,7 +47,7 @@ As an extension, SJSON allows for raw string literals, in both Lua and Python fl
 
     foo = [=[This is a raw literal with embedded " and stuff]=]
 
-    foo = """This is a raw literal with embedded " and stuff]=]
+    foo = """This is a raw literal with embedded " and stuff"""
 
 Usage
 -----
