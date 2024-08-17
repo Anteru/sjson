@@ -9,7 +9,7 @@ import string
 import io
 from enum import Enum
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 
 
 class MemoryInputStream:

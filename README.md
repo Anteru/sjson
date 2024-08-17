@@ -62,6 +62,10 @@ The library provides four methods, similar to the Python JSON module. These are:
 Changelog
 ---------
 
+### 2.1.1
+
+* Packaging changes only. Raised supported Python version to Python 3.12
+
 ### 2.1
 
 * Add support for Python-style raw strings, delimited by `"""`.
