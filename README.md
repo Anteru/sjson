@@ -62,6 +62,12 @@ The library provides four methods, similar to the Python JSON module. These are:
 Changelog
 ---------
 
+### 2.2
+
+* Bump minimum Python to 3.12.
+* Add type information.
+* Various internal cleanups & refactorings.
+
 ### 2.1.1
 
 * Packaging changes only. Raised supported Python version to Python 3.12
