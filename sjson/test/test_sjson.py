@@ -160,26 +160,31 @@ def testBugDecodeFailure1():
 
 def testReportErrorOnIncompleteArray1():
     s = "test = [1, 2, "
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads(s)
 
 
 def testReportErrorOnIncompleteArray2():
     s = "test = ["
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads(s)
 
 
 def testReportOnIncompleteMap1():
     s = "test = "
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads(s)
 
 
 def testReportOnIncompleteMap2():
     s = "test "
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads(s)
+
+
+def testReportOnKeyOnly():
+    with pytest.raises(sjson.ParseException):
+        sjson.loads('foo')
 
 
 def testBugDecodeFailsForFloats():
@@ -209,12 +214,12 @@ def testBugDecodeFailsOnStringWithDot():
 
 
 def testStringWithoutQuotesAsValueThrows():
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("key = baz\n")
 
 
 def testStringWithoutClosingQuotesThrows():
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads('key = "baz\n')
 
 
@@ -249,23 +254,23 @@ def testStringWithEmptyRawLiteral():
 
 
 def testStringWithIncorrectlyTerminatedRawLiteral():
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("""foo = [=[=]""")
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("""foo = [=[]]""")
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("""foo = [=[]=""")
 
 
 def testUndelimitedMapThrows():
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads('foo = { bar = "value", baz = { ui = "foo",')
 
 
 def testInvalidRawQuotedStringStart():
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("foo = [=? wrong ?=]")
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("foo = [=] wrong [=]")
 
 
@@ -307,7 +312,7 @@ def testCStyleCommentIsIgnored():
 
 
 def testNotClosedCStyleCommentThrows():
-    with pytest.raises(Exception):
+    with pytest.raises(sjson.ParseException):
         sjson.loads("""foo = /* bar * 23""")
 
 
@@ -319,7 +324,8 @@ def testCppStyleCommentIsIgnored():
 
 
 def testParseStringraySJSONExample():
-    r = sjson.loads("""// The script that should be started when the application runs.
+    r = sjson.loads(
+        """// The script that should be started when the application runs.
 boot_script = "boot"
 
 // The port on which the console server runs.
@@ -407,32 +413,33 @@ value = [1, 2, 3]
 
 
 def testDoubleColonSeparator():
-    assert sjson.loads("""{"smells-like" : "json"}""") == {'smells-like': 'json'}
+    assert sjson.loads("""{"smells-like" : "json"}""") == {
+        'smells-like': 'json'}
 
 
 def testUnknownEscapeGetsIgnored():
-    l = sjson.loads(r'foo = "Bar\lbaz"')
-    assert l['foo'] == r'Bar\lbaz'
+    r = sjson.loads(r'foo = "Bar\lbaz"')
+    assert r['foo'] == r'Bar\lbaz'
 
 
 def testPythonStyleString():
-    l = sjson.loads('''foo = """This is
+    r = sjson.loads('''foo = """This is
 multiline!"""''')
     assert (
-        l['foo']
+        r['foo']
         == """This is
 multiline!"""
     )
 
 
 def testQuadrupleQuotedString():
-    l = sjson.loads('''Foo = """"Why oh why""""''')
-    assert l['Foo'] == '"Why oh why"'
+    r = sjson.loads('''Foo = """"Why oh why""""''')
+    assert r['Foo'] == '"Why oh why"'
 
 
 def testQuintupleQuotedString():
-    l = sjson.loads('''Foo = """""Why oh why"""""''')
-    assert l['Foo'] == '""Why oh why""'
+    r = sjson.loads('''Foo = """""Why oh why"""""''')
+    assert r['Foo'] == '""Why oh why""'
 
 
 def testSixtupleQuotedStringIsInvalid():
@@ -441,13 +448,13 @@ def testSixtupleQuotedStringIsInvalid():
 
 
 def testPythonRawQuotedStringInsideLuaRawString():
-    l = sjson.loads('''foo = [=[ String """ string ]=]''')
-    assert l['foo'] == ''' String """ string '''
+    r = sjson.loads('''foo = [=[ String """ string ]=]''')
+    assert r['foo'] == ''' String """ string '''
 
 
 def testLuaRawQuotedStringInsidePythonRawString():
-    l = sjson.loads('''foo = """ String [=[ baz ]=] string """''')
-    assert l['foo'] == ''' String [=[ baz ]=] string '''
+    r = sjson.loads('''foo = """ String [=[ baz ]=] string """''')
+    assert r['foo'] == ''' String [=[ baz ]=] string '''
 
 
 def testEncodeUnknownTypeRaisesException():
@@ -459,5 +466,5 @@ def testEncodeUnknownTypeRaisesException():
 
 
 def testDecodeEscapedCharacters():
-    l = sjson.loads('''a = "\\b\\n\\t"''')
-    assert l['a'] == """\b\n\t"""
+    r = sjson.loads('''a = "\\b\\n\\t"''')
+    assert r['a'] == """\b\n\t"""

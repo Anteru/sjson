@@ -169,7 +169,7 @@ def _skip_characters_and_whitespace(stream: _InputStream, num_char_to_skip: int)
 _WHITESPACE_SET = frozenset([b' ', b'\t', b'\n', b'\r'])
 
 
-def _is_whitespace(char):
+def _is_whitespace(char: bytes | None):
     return char in _WHITESPACE_SET
 
 
@@ -230,11 +230,11 @@ def _skip_whitespace(stream: _InputStream):
 _IDENTIFIER_SET = frozenset(string.ascii_letters + string.digits + '_')
 
 
-def _is_identifier(obj):
+def _is_identifier(obj: bytes):
     return chr(obj[0]) in _IDENTIFIER_SET
 
 
-def _decode_escaped_character(char):
+def _decode_escaped_character(char: bytes):
     match char:
         case b'b':
             return b'\b'
@@ -289,6 +289,11 @@ def _decode_string(stream: _InputStream, allow_identifier=False):
 
     while True:
         next_char = stream.peek()
+
+        # peek() cannot return None here as we don't allow peeking beyond the
+        # end of the file
+        assert next_char is not None
+
         if parse_as_identifier and not _is_identifier(next_char):
             break
 
@@ -547,8 +552,8 @@ _SUPPORTED_ENCODE_TYPE: typing.TypeAlias = typing.Union[
 def _encode(
     obj: _SUPPORTED_ENCODE_TYPE,
     separators: tuple[str, str, str] = (', ', '\n', ' = '),
-    indent=0,
-    level=0,
+    indent: str = '',
+    level: int = 0,
 ):
     match obj:
         case None:
@@ -581,7 +586,8 @@ def _encode_key(k: str):
 
 
 def _encode_list(
-    obj: typing.Sequence, separators: tuple[str, str, str], indent: str, level: int
+    obj: typing.Sequence, separators: tuple[str, str, str],
+    indent: str, level: int
 ):
     yield '['
     first = True
@@ -595,10 +601,12 @@ def _encode_list(
 
 
 def _encode_dict(
-    obj: typing.Mapping, separators: tuple[str, str, str], indent: str, level: int
+    obj: typing.Mapping, separators: tuple[str, str, str],
+    indent: str, level: int
 ):
     if level > 0:
-        yield '{\n'
+        yield '{'
+        yield separators[1]
     first = True
     for key, value in obj.items():
         if first:
@@ -609,7 +617,7 @@ def _encode_dict(
         yield from _encode_key(key)
         yield separators[2]
         yield from _encode(value, separators, indent, level + 1)
-    yield '\n'
+    yield separators[1]
     yield _indent(level - 1, indent)
     if level > 0:
         yield '}'
