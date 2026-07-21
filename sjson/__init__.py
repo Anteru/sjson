@@ -13,26 +13,46 @@ import typing
 
 __version__ = '2.2.0'
 
+_SUPPORTED_ENCODE_TYPE: typing.TypeAlias = typing.Union[
+    None,
+    bool,
+    numbers.Number,
+    str,
+    typing.Sequence['_SUPPORTED_ENCODE_TYPE'],
+    typing.Mapping[str, '_SUPPORTED_ENCODE_TYPE'],
+]
+
+_SUPPORTED_DECODE_TYPE: typing.TypeAlias = typing.Union[
+    None,
+    bool,
+    int,
+    float,
+    str,
+    list['_SUPPORTED_DECODE_TYPE'],
+    typing.OrderedDict[str, '_SUPPORTED_DECODE_TYPE'],
+]
+
+Loc = typing.NamedTuple('loc', [('line', int), ('column', int)])
 
 class _InputStream:
     @abstractmethod
     def read(self, count: int = 1) -> bytes: ...
 
     @abstractmethod
-    def skip(self, count: int = 1): ...
+    def skip(self, count: int = 1) -> None: ...
 
     @abstractmethod
-    def peek(self, count: int = 1, allow_end_of_stream=False) -> bytes | None:
+    def peek(self, count: int = 1, allow_end_of_stream: bool=False) -> bytes | None:
         pass
 
     @abstractmethod
-    def get_location(self) -> tuple[int, int]: ...
+    def get_location(self) -> Loc: ...
 
 
 class MemoryInputStream(_InputStream):
     """Input stream wrapper for reading directly from memory."""
 
-    def __init__(self, s: bytes):
+    def __init__(self, s: bytes) -> None:
         """
         s -- a bytes object.
         """
@@ -40,7 +60,7 @@ class MemoryInputStream(_InputStream):
         self._current_index = 0
         self._length = len(s)
 
-    def read(self, count=1) -> bytes:
+    def read(self, count: int=1) -> bytes:
         """read ``count`` bytes from the stream."""
         end_index = self._current_index + count
         if end_index > self._length:
@@ -49,7 +69,7 @@ class MemoryInputStream(_InputStream):
         self._current_index = end_index
         return result
 
-    def peek(self, count=1, allow_end_of_stream=False) -> bytes | None:
+    def peek(self, count: int=1, allow_end_of_stream: bool=False) -> bytes | None:
         """peek ``count`` bytes from the stream. If ``allow_end_of_stream`` is
         ``True``, no error will be raised if the end of the stream is reached
         while trying to peek."""
@@ -61,13 +81,12 @@ class MemoryInputStream(_InputStream):
 
         return self._stream[self._current_index : end_index]
 
-    def skip(self, count=1):
+    def skip(self, count: int=1) -> None:
         """skip ``count`` bytes."""
         self._current_index += count
 
-    def get_location(self) -> tuple[int, int]:
+    def get_location(self) -> Loc:
         """Get the current location in the stream."""
-        loc = collections.namedtuple('loc', ['line', 'column'])
         bytes_read = self._stream[: self._current_index]
         line = 1
         column = 1
@@ -78,19 +97,19 @@ class MemoryInputStream(_InputStream):
                 column = 1
             else:
                 column += 1
-        return loc(line, column)
+        return Loc(line, column)
 
 
 class ByteBufferInputStream(_InputStream):
     """Input stream wrapper for reading directly from an I/O object."""
 
-    def __init__(self, stream: io.BufferedReader):
+    def __init__(self, stream: io.BufferedReader) -> None:
         self._stream = stream
         self._index = 0
         self._line = 1
         self._column = 1
 
-    def read(self, count=1) -> bytes:
+    def read(self, count: int=1) -> bytes:
         """read ``count`` bytes from the stream."""
         result = self._stream.read(count)
         if len(result) < count:
@@ -105,7 +124,7 @@ class ByteBufferInputStream(_InputStream):
                 self._column += 1
         return result
 
-    def peek(self, count=1, allow_end_of_stream=False) -> bytes | None:
+    def peek(self, count: int=1, allow_end_of_stream: bool=False) -> bytes | None:
         """peek ``count`` bytes from the stream. If ``allow_end_of_stream`` is
         ``True``, no error will be raised if the end of the stream is reached
         while trying to peek."""
@@ -117,29 +136,28 @@ class ByteBufferInputStream(_InputStream):
 
         return result[:count]
 
-    def skip(self, count=1):
+    def skip(self, count: int=1) -> None:
         """skip ``count`` bytes."""
         self.read(count)
 
-    def get_location(self) -> tuple[int, int]:
+    def get_location(self) -> Loc:
         """Get the current location in the stream."""
-        loc = collections.namedtuple('loc', ['line', 'column'])
-        return loc(self._line, self._column)
+        return Loc(self._line, self._column)
 
 
 class ParseException(RuntimeError):
     """Parse exception."""
 
-    def __init__(self, msg: str, location: tuple[int, int]):
+    def __init__(self, msg: str, location: Loc) -> None:
         super(ParseException, self).__init__(msg)
         self._msg = msg
         self._location = location
 
-    def get_location(self) -> tuple[int, int]:
+    def get_location(self) -> Loc:
         """Get the current location at which the exception occurred."""
         return self._location
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '{} at line {}, column {}'.format(
             self._msg, self._location.line, self._location.column
         )
@@ -149,7 +167,7 @@ def _raise_end_of_stream_exception(stream: _InputStream) -> typing.NoReturn:
     raise ParseException('Unexpected end-of-stream', stream.get_location())
 
 
-def _consume(stream: _InputStream, what: bytes):
+def _consume(stream: _InputStream, what: bytes) -> None:
     _skip_whitespace(stream)
     what_len = len(what)
     if stream.peek(what_len) != what:
@@ -159,7 +177,7 @@ def _consume(stream: _InputStream, what: bytes):
     stream.skip(what_len)
 
 
-def _skip_characters_and_whitespace(stream: _InputStream, num_char_to_skip: int):
+def _skip_characters_and_whitespace(stream: _InputStream, num_char_to_skip: int) -> bytes | None:
     stream.skip(num_char_to_skip)
     return _skip_whitespace(stream)
 
@@ -169,11 +187,11 @@ def _skip_characters_and_whitespace(stream: _InputStream, num_char_to_skip: int)
 _WHITESPACE_SET = frozenset([b' ', b'\t', b'\n', b'\r'])
 
 
-def _is_whitespace(char: bytes | None):
+def _is_whitespace(char: bytes | None) -> bool:
     return char in _WHITESPACE_SET
 
 
-def _skip_c_style_comment(stream: _InputStream):
+def _skip_c_style_comment(stream: _InputStream) -> None:
     comment_start_location = stream.get_location()
     # skip the comment start
     stream.skip(2)
@@ -196,7 +214,7 @@ def _skip_c_style_comment(stream: _InputStream):
         stream.skip()
 
 
-def _skip_cpp_style_comment(stream: _InputStream):
+def _skip_cpp_style_comment(stream: _InputStream) -> None:
     # skip the comment start
     stream.skip(2)
     while True:
@@ -206,7 +224,7 @@ def _skip_cpp_style_comment(stream: _InputStream):
         stream.skip()
 
 
-def _skip_whitespace(stream: _InputStream):
+def _skip_whitespace(stream: _InputStream) -> bytes | None:
     """skip whitespace. Returns the next character if a new position within the
     stream was found; returns None if the end of the stream was hit."""
     while True:
@@ -230,11 +248,11 @@ def _skip_whitespace(stream: _InputStream):
 _IDENTIFIER_SET = frozenset(string.ascii_letters + string.digits + '_')
 
 
-def _is_identifier(obj: bytes):
+def _is_identifier(obj: bytes) -> bool:
     return chr(obj[0]) in _IDENTIFIER_SET
 
 
-def _decode_escaped_character(char: bytes):
+def _decode_escaped_character(char: bytes) -> bytes:
     match char:
         case b'b':
             return b'\b'
@@ -256,7 +274,7 @@ class RawQuoteStyle(Enum):
     Python = 2
 
 
-def _decode_string(stream: _InputStream, allow_identifier=False):
+def _decode_string(stream: _InputStream, allow_identifier: bool=False) -> str:
     # When we enter here, we either start with " or [, or there is no quoting
     # enabled.
     _skip_whitespace(stream)
@@ -357,7 +375,7 @@ def _decode_string(stream: _InputStream, allow_identifier=False):
 _NUMBER_SEPARATOR_SET = _WHITESPACE_SET.union({b',', b']', b'}', None})
 
 
-def _decode_number(stream: _InputStream, next_char):
+def _decode_number(stream: _InputStream, next_char: bytes) -> float | int:
     """Parse a number.
 
     next_char -- the next byte in the stream.
@@ -384,14 +402,14 @@ def _decode_number(stream: _InputStream, next_char):
     return int(value)
 
 
-def _decode_dict(stream: _InputStream, delimited=False):
+def _decode_dict(stream: _InputStream, delimited: bool=False) -> typing.OrderedDict[str, _SUPPORTED_DECODE_TYPE]:
     """
     delimited -- if ``True``, parsing will stop once the end-of-dictionary
                  delimiter has been reached(``}``)
     """
     from collections import OrderedDict
 
-    result = OrderedDict()
+    result: _SUPPORTED_DECODE_TYPE = OrderedDict()
 
     if stream.peek() == b'{':
         stream.skip()
@@ -421,8 +439,8 @@ def _decode_dict(stream: _InputStream, delimited=False):
     return result
 
 
-def _parse_list(stream: _InputStream):
-    result = []
+def _parse_list(stream: _InputStream) -> list[_SUPPORTED_DECODE_TYPE]:
+    result: _SUPPORTED_DECODE_TYPE = []
     # skip '['
     next_char = _skip_characters_and_whitespace(stream, 1)
 
@@ -441,7 +459,7 @@ def _parse_list(stream: _InputStream):
     return result
 
 
-def _parse(stream: _InputStream):
+def _parse(stream: _InputStream) -> _SUPPORTED_DECODE_TYPE:
     next_char = _skip_whitespace(stream)
 
     match next_char:
@@ -475,7 +493,7 @@ def _parse(stream: _InputStream):
         raise ParseException('Invalid character', stream.get_location())
 
 
-def load(stream: io.RawIOBase):
+def load(stream: io.RawIOBase) -> typing.OrderedDict[str, _SUPPORTED_DECODE_TYPE]:
     """Load a SJSON object from a stream.
 
     The stream is assumed to point to UTF-8 encoded data.
@@ -483,12 +501,12 @@ def load(stream: io.RawIOBase):
     return _decode_dict(ByteBufferInputStream(io.BufferedReader(stream)))
 
 
-def loads(text: str):
+def loads(text: str) -> typing.OrderedDict[str, _SUPPORTED_DECODE_TYPE]:
     """Load a SJSON object from a string."""
     return _decode_dict(MemoryInputStream(text.encode('utf-8')))
 
 
-def dumps(obj, indent=None) -> str:
+def dumps(obj: _SUPPORTED_ENCODE_TYPE, indent: int | str | None=None) -> str:
     """Dump an object to a string."""
     import io
 
@@ -497,7 +515,7 @@ def dumps(obj, indent=None) -> str:
     return stream.getvalue()
 
 
-def dump(obj, fp: io.TextIOBase, indent: int | None | str = None):
+def dump(obj: _SUPPORTED_ENCODE_TYPE, fp: io.TextIOBase, indent: int | None | str = None) -> None:
     """Dump an object to a text stream.
 
     The output is always text, not binary."""
@@ -517,7 +535,7 @@ def dump(obj, fp: io.TextIOBase, indent: int | None | str = None):
 _ESCAPE_CHARACTER_SET = {'\n': '\\n', '\b': '\\b', '\t': '\\t', '"': '\\"'}
 
 
-def _escape_string(obj: str, quote=True) -> typing.Generator[str, None, None]:
+def _escape_string(obj: str, quote: bool=True) -> typing.Generator[str, None, None]:
     """Escape a string.
 
     If quote is set, the string will be returned with quotation marks at the
@@ -539,22 +557,12 @@ def _escape_string(obj: str, quote=True) -> typing.Generator[str, None, None]:
         yield '"'
 
 
-_SUPPORTED_ENCODE_TYPE: typing.TypeAlias = typing.Union[
-    None,
-    bool,
-    numbers.Number,
-    str,
-    typing.Sequence['_SUPPORTED_ENCODE_TYPE'],
-    typing.Mapping[str, '_SUPPORTED_ENCODE_TYPE'],
-]
-
-
 def _encode(
     obj: _SUPPORTED_ENCODE_TYPE,
     separators: tuple[str, str, str] = (', ', '\n', ' = '),
     indent: str = '',
     level: int = 0,
-):
+) -> typing.Generator[str, None, None]:
     match obj:
         case None:
             yield 'null'
@@ -577,18 +585,18 @@ def _encode(
             raise RuntimeError("Unsupported object type")
 
 
-def _indent(level: int, indent: str):
+def _indent(level: int, indent: str) -> str:
     return indent * level
 
 
-def _encode_key(k: str):
+def _encode_key(k: str) -> typing.Generator[str, None, None]:
     yield from _escape_string(k, False)
 
 
 def _encode_list(
-    obj: typing.Sequence, separators: tuple[str, str, str],
+    obj: typing.Sequence['_SUPPORTED_ENCODE_TYPE'], separators: tuple[str, str, str],
     indent: str, level: int
-):
+) -> typing.Generator[str, None, None]:
     yield '['
     first = True
     for element in obj:
@@ -601,9 +609,9 @@ def _encode_list(
 
 
 def _encode_dict(
-    obj: typing.Mapping, separators: tuple[str, str, str],
+    obj: typing.Mapping[str, _SUPPORTED_ENCODE_TYPE], separators: tuple[str, str, str],
     indent: str, level: int
-):
+) -> typing.Generator[str, None, None]:
     if level > 0:
         yield '{'
         yield separators[1]
